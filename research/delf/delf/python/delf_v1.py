@@ -236,6 +236,7 @@ class DelfV1(object):
         scope='resnet_v1_50')
     return net, end_points
 
+  # 실제 feature extraction에서는 main 함수인듯~
   def GetAttentionPrelogit(
       self,
       images,
