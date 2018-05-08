@@ -91,6 +91,7 @@ class DelfV1(object):
     Args:
       attention_feature_map: Potentially normalized feature map that will
         be aggregated with attention score map.
+            
       feature_map: Unnormalized feature map that will be used to compute
         attention score map.
       attention_nonlinear: Type of non-linearity that will be applied to
@@ -105,39 +106,38 @@ class DelfV1(object):
     Raises:
       ValueError: If unknown attention non-linearity type is provided.
     """
-    with tf.variable_scope(
-        'attention', values=[attention_feature_map, feature_map]):
+    with tf.variable_scope('attention', values=[attention_feature_map, feature_map]):
       with tf.variable_scope('compute', values=[feature_map]):
+        
+        # attention Network        
+        # kernel 논문에서는 1x1이나 여기서는 찾을길이 없음.ㅠ 그러나, WidthxHeight크기를 유지하면서 channel -> 1로 가는게 목적이기때문에,
+        #    1x1이 맞을듯~
+        # 1. 첫번째 network는 relu형태의 512(채널) outpout를 같는 layers        
         activation_fn_conv1 = tf.nn.relu
-        feature_map_conv1 = slim.conv2d(
-            feature_map,
-            512,
-            kernel,
-            rate=1,
-            activation_fn=activation_fn_conv1,
-            scope='conv1')
-
-        attention_score = slim.conv2d(
-            feature_map_conv1,
-            1,
-            kernel,
-            rate=1,
-            activation_fn=None,
-            normalizer_fn=None,
-            scope='conv2')
+        feature_map_conv1   = slim.conv2d(feature_map, 512, kernel, rate=1, activation_fn=activation_fn_conv1, scope='conv1')
+        # 2. 두 번째 network는 relu형태의 1(채널) outpout를 같는 layers
+        attention_score     = slim.conv2d( feature_map_conv1, 1, kernel, rate=1, activation_fn=None, normalizer_fn=None, scope='conv2')
 
       # Set activation of conv2 layer of attention model.
-      with tf.variable_scope(
-          'merge', values=[attention_feature_map, attention_score]):
+      with tf.variable_scope('merge', values=[attention_feature_map, attention_score]):
         if attention_nonlinear not in _SUPPORTED_ATTENTION_NONLINEARITY:
           raise ValueError('Unknown attention non-linearity.')
-        if attention_nonlinear == 'softplus':
-          with tf.variable_scope(
-              'softplus_attention',
-              values=[attention_feature_map, attention_score]):
+          
+        if attention_nonlinear == 'softplus':          
+          with tf.variable_scope('softplus_attention', values=[attention_feature_map, attention_score]):
+            
+            # 3. attention score 계산 
+            #   softplus activation : 두번째 cnn 결과를 입력으로 받는다.            
             attention_prob = tf.nn.softplus(attention_score)
-            attention_feat = tf.reduce_mean(
-                tf.multiply(attention_feature_map, attention_prob), [1, 2])
+            
+            # 4. attention feature map : attention score를 conv feature map에 적용
+            #  attention feature map = attention_feature_map x attention_prob
+            #      attention_feature_map = 3차원, WxHxC(=512)
+            #      attention_prob        = 2차원, WxHxC(=1)              
+            # 주의) attention_feature_map = 입력으로 들어올 때, 오리지널 conv feature map 형태이던가 이를 l2 norm하던가의 형태로 들어오게 됨
+            #       다시 말해서, conv feature map일뿐 이름에 혹하지 말자  
+            attention_feat = tf.reduce_mean(tf.multiply(attention_feature_map, attention_prob), [1, 2])
+        # tf.expand_dim을 두번하는 이유는 ???    
         attention_feat = tf.expand_dims(tf.expand_dims(attention_feat, 1), 2)
     return attention_feat, attention_prob, attention_score
 
