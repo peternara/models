@@ -115,7 +115,7 @@ class DelfV1(object):
         # 1. 첫번째 network는 relu형태의 512(채널) outpout를 같는 layers        
         activation_fn_conv1 = tf.nn.relu
         feature_map_conv1   = slim.conv2d(feature_map, 512, kernel, rate=1, activation_fn=activation_fn_conv1, scope='conv1')
-        # 2. 두 번째 network는 relu형태의 1(채널) outpout를 같는 layers
+        # 2. 두 번째 network는 1(채널) outpout를 같는 layers (뒤에 activated f = softplus)
         attention_score     = slim.conv2d( feature_map_conv1, 1, kernel, rate=1, activation_fn=None, normalizer_fn=None, scope='conv2')
 
       # Set activation of conv2 layer of attention model.
