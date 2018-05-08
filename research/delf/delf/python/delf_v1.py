@@ -338,19 +338,17 @@ class DelfV1(object):
             training_resnet=training_resnet,
             training_attention=training_attention,
             reuse=reuse))
-    with slim.arg_scope(
-        resnet_v1.resnet_arg_scope(
-            weight_decay=weight_decay, batch_norm_scale=True)):
+    
+    with slim.arg_scope(resnet_v1.resnet_arg_scope(weight_decay=weight_decay, batch_norm_scale=True)):
       with slim.arg_scope([slim.batch_norm], is_training=training_attention):
-        with tf.variable_scope(
-            _ATTENTION_VARIABLE_SCOPE, values=[attention_feat], reuse=reuse):
-          logits = slim.conv2d(
-              attention_feat,
-              num_classes, [1, 1],
-              activation_fn=None,
-              normalizer_fn=None,
-              scope='logits')
-          logits = tf.squeeze(logits, [1, 2], name='spatial_squeeze')
+        with tf.variable_scope(_ATTENTION_VARIABLE_SCOPE, values=[attention_feat], reuse=reuse):
+                    
+          # 사실상 fcn > num_classes predict > softmax역할 아님 뒤에서 하는가??
+          # _PerformAttention의 결과를 가지고 
+          # attention_feat = [batch, 1, 1, channel]
+          logits = slim.conv2d(attention_feat, num_classes, [1, 1], activation_fn=None, normalizer_fn=None, scope='logits')
+          logits = tf.squeeze(logits, [1, 2], name='spatial_squeeze') # [batch, num_classes]
+          
     return logits, attention_prob, attention_score, feature_map
 
   def AttentionModel(self,
