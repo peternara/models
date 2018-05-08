@@ -137,8 +137,13 @@ class DelfV1(object):
             # 주의) attention_feature_map = 입력으로 들어올 때, 오리지널 conv feature map 형태이던가 이를 l2 norm하던가의 형태로 들어오게 됨
             #       다시 말해서, conv feature map일뿐 이름에 혹하지 말자  
             attention_feat = tf.reduce_mean(tf.multiply(attention_feature_map, attention_prob), [1, 2])
-        # tf.expand_dim을 두번하는 이유는 ???    
+            
+        # tf.expand_dim을 두번하는 이유는 ??? > [batch, 1, 1, channels] 이 크기를 유지한는데
+        #   요 때의 channels는  width x height 의 크기?? channel크기??
+        #     > tf.reduce_mean(A, [1,2])에서 채널은 유지하면서 withxheight의 평균(average pooling)에 더 점수를.. = channel크기
+        #     > paper에서 n개의 d-dim의 가진 feature sum은 n번 해야하니..d-dim의 크기를 가져야하는듯~ d-dim = channel
         attention_feat = tf.expand_dims(tf.expand_dims(attention_feat, 1), 2)
+        
     return attention_feat, attention_prob, attention_score
 
   def _GetAttentionSubnetwork(
