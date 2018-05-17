@@ -146,6 +146,8 @@ class DelfV1(object):
         #     > tf.reduce_mean(A, [1,2])에서 채널은 유지하면서 withxheight의 평균(average pooling)에 더 점수를.. = channel크기
         #     > paper에서 n개의 d-dim의 가진 feature sum은 n번 해야하니..d-dim의 크기를 가져야하는듯~ d-dim = channel
         attention_feat = tf.expand_dims(tf.expand_dims(attention_feat, 1), 2)
+        # attention_feat의 크기가 이해가 안감 현재..실제 돌려봐야함        
+        
         #
         # 참고로 이후에) def _GetAttentionModel() 함수에서, fcn이 num_classes를 prediction (softmax 연산과 비슷하게)
         #   logits  = slim.conv2d(attention_feat, num_classes, [1, 1],  activation_fn=None, normalizer_fn=None, scope='logits')
