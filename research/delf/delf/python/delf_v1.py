@@ -149,6 +149,8 @@ class DelfV1(object):
         #   logits  = tf.squeeze(logits, [1, 2], name='spatial_squeeze') # [batch, num_classes]
         #   실제적으로 _GetAttentionModel 안불리는것으로 보아, training 단계에서만 사용하는듯보임.
         
+        # attention_prob: Attention score after the non-linearity. run softplus
+        # attention_score: Attention score before the non-linearity. not softplus
     return attention_feat, attention_prob, attention_score
 
   def _GetAttentionSubnetwork(
@@ -195,8 +197,8 @@ class DelfV1(object):
       attention_outputs = self._PerformAttention(
           attention_feature_map, feature_map, attention_nonlinear, kernel)
       prelogits, attention_prob, attention_score = attention_outputs
-      end_points['prelogits'] = prelogits
-      end_points['attention_prob'] = attention_prob
+      end_points['prelogits']       = prelogits
+      end_points['attention_prob']  = attention_prob
       end_points['attention_score'] = attention_score
     return prelogits, attention_prob, attention_score, end_points
 
