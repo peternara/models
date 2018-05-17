@@ -130,10 +130,7 @@ class DelfV1(object):
             #   softplus activation : 두번째 cnn 결과를 입력으로 받는다.            
             attention_prob = tf.nn.softplus(attention_score)
             
-            # 4. attention feature map : attention score를 conv feature map에 적용한 후
-            #   일종의 gloabal descritptor 형태로 전환하는 듯보이는데..이게 논문에서는 안쓰이는듯..보임.
-            #   local descriptor로써 사용 더 자세히 읽어보일필요가 있음.
-            #
+            # 4. attention feature map : attention score를 conv feature map에 적용
             #  attention feature map = attention_feature_map x attention_prob
             #      attention_feature_map = 3차원, WxHxC(=512)
             #      attention_prob        = 2차원, WxHxC(=1)              
@@ -141,13 +138,13 @@ class DelfV1(object):
             #       다시 말해서, conv feature map일뿐 이름에 혹하지 말자  
             attention_feat = tf.reduce_mean(tf.multiply(attention_feature_map, attention_prob), [1, 2])
             
-        # tf.expand_dim을 두번하는 이유는 ??? > [batch, 1, 1, channels] 이 크기를 유지한는데
-        #   요 때의 channels는  width x height 의 크기?? channel크기??
-        #     > tf.reduce_mean(A, [1,2])에서 채널은 유지하면서 withxheight의 평균(average pooling)에 더 점수를.. = channel크기
-        #     > paper에서 n개의 d-dim의 가진 feature sum은 n번 해야하니..d-dim의 크기를 가져야하는듯~ d-dim = channel
+        # 이해안가서 조잘조라하는것임.
+        #   tf.expand_dim을 두번하는 이유는 ??? > [batch, 1, 1, channels] 이 크기를 유지한는데
+        #    요 때의 channels는  width x height 의 크기?? channel크기??
+        #       > tf.reduce_mean(A, [1,2])에서 채널은 유지하면서 withxheight의 평균(average pooling)에 더 점수를.. = channel크기
+        #      > paper에서 n개의 d-dim의 가진 feature sum은 n번 해야하니..d-dim의 크기를 가져야하는듯~ d-dim = channel
+        # 이 형태가
         attention_feat = tf.expand_dims(tf.expand_dims(attention_feat, 1), 2)
-        # attention_feat의 크기가 이해가 안감 현재..실제 돌려봐야함        
-        
         #
         # 참고로 이후에) def _GetAttentionModel() 함수에서, fcn이 num_classes를 prediction (softmax 연산과 비슷하게)
         #   logits  = slim.conv2d(attention_feat, num_classes, [1, 1],  activation_fn=None, normalizer_fn=None, scope='logits')
@@ -355,7 +352,8 @@ class DelfV1(object):
                     
           # 사실상 fcn > num_classes predict > softmax역할 아님 뒤에서 하는가??
           # _PerformAttention의 결과를 가지고 
-          # attention_feat = [batch, 1, 1, channel] (dim이 정확하지 않음) > 이 크기인지도 궁금??
+          # attention_feat = [batch, 1, 1, channel]
+          # 사실상 fc layer로 만드는 작업?
           logits = slim.conv2d(attention_feat, num_classes, [1, 1], activation_fn=None, normalizer_fn=None, scope='logits')
           logits = tf.squeeze(logits, [1, 2], name='spatial_squeeze') # [batch, num_classes]
           
