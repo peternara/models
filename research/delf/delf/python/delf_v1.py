@@ -130,7 +130,10 @@ class DelfV1(object):
             #   softplus activation : 두번째 cnn 결과를 입력으로 받는다.            
             attention_prob = tf.nn.softplus(attention_score)
             
-            # 4. attention feature map : attention score를 conv feature map에 적용
+            # 4. attention feature map : attention score를 conv feature map에 적용한 후
+            #   일종의 gloabal descritptor 형태로 전환하는 듯보이는데..이게 논문에서는 안쓰이는듯..보임.
+            #   local descriptor로써 사용 더 자세히 읽어보일필요가 있음.
+            #
             #  attention feature map = attention_feature_map x attention_prob
             #      attention_feature_map = 3차원, WxHxC(=512)
             #      attention_prob        = 2차원, WxHxC(=1)              
@@ -350,7 +353,7 @@ class DelfV1(object):
                     
           # 사실상 fcn > num_classes predict > softmax역할 아님 뒤에서 하는가??
           # _PerformAttention의 결과를 가지고 
-          # attention_feat = [batch, 1, 1, channel]
+          # attention_feat = [batch, 1, 1, channel] (dim이 정확하지 않음) > 이 크기인지도 궁금??
           logits = slim.conv2d(attention_feat, num_classes, [1, 1], activation_fn=None, normalizer_fn=None, scope='logits')
           logits = tf.squeeze(logits, [1, 2], name='spatial_squeeze') # [batch, num_classes]
           
