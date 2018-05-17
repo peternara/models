@@ -354,6 +354,7 @@ class DelfV1(object):
           # _PerformAttention의 결과를 가지고 
           # attention_feat = [batch, 1, 1, channel]
           # 사실상 fc layer로 만드는 작업?
+          # a simple average pooling - https://github.com/tensorflow/models/issues/3387#issuecomment-372406242 - 
           logits = slim.conv2d(attention_feat, num_classes, [1, 1], activation_fn=None, normalizer_fn=None, scope='logits')
           logits = tf.squeeze(logits, [1, 2], name='spatial_squeeze') # [batch, num_classes]
           
