@@ -162,40 +162,41 @@ def ExtractKeypointDescriptor(image, layer_name, image_scales, iou,
       scales: Concatenated scale tensor with the shape of [K].
       scores: Concatenated attention score tensor with the shape of [K].
     """
-    scale = tf.gather(image_scales, scale_index)
+    scale          = tf.gather(image_scales, scale_index)
     new_image_size = tf.to_int32(tf.round(original_image_shape_float * scale))
-    resized_image = tf.image.resize_bilinear(image_tensor, new_image_size)
+    resized_image  = tf.image.resize_bilinear(image_tensor, new_image_size)
 
-    attention, feature_map = model_fn(
-        resized_image, normalized_image=True, reuse=reuse)
+    attention, feature_map = model_fn(resized_image, normalized_image=True, reuse=reuse)
 
     rf_boxes = CalculateReceptiveBoxes(
         tf.shape(feature_map)[1],
         tf.shape(feature_map)[2], rf, stride, padding)
+    
+    # 이 부분이 이미지 사이즈로 feature map을 convert(scale)하는 부분인듯
     # Re-project back to the original image space.
-    rf_boxes = tf.divide(rf_boxes, scale)
-    attention = tf.reshape(attention, [-1])
+    rf_boxes    = tf.divide(rf_boxes, scale)
+    attention   = tf.reshape(attention, [-1]) # 이해안감? [-1] 이부분이..
     feature_map = tf.reshape(feature_map, [-1, feature_depth])
 
     # Use attention score to select feature vectors.
-    indices = tf.reshape(tf.where(attention >= abs_thres), [-1])
-    selected_boxes = tf.gather(rf_boxes, indices)
+    indices           = tf.reshape(tf.where(attention >= abs_thres), [-1])
+    selected_boxes    = tf.gather(rf_boxes, indices)
     selected_features = tf.gather(feature_map, indices)
-    selected_scores = tf.gather(attention, indices)
-    selected_scales = tf.ones_like(selected_scores, tf.float32) / scale
+    selected_scores   = tf.gather(attention, indices)
+    selected_scales   = tf.ones_like(selected_scores, tf.float32) / scale
 
     # Concat with the previous result from different scales.
-    boxes = tf.concat([boxes, selected_boxes], 0)
+    boxes    = tf.concat([boxes, selected_boxes], 0)
     features = tf.concat([features, selected_features], 0)
-    scales = tf.concat([scales, selected_scales], 0)
-    scores = tf.concat([scores, selected_scores], 0)
+    scales   = tf.concat([scales, selected_scales], 0)
+    scores   = tf.concat([scores, selected_scores], 0)
 
     return scale_index + 1, boxes, features, scales, scores
 
-  output_boxes = tf.zeros([0, 4], dtype=tf.float32)
+  output_boxes    = tf.zeros([0, 4], dtype=tf.float32)
   output_features = tf.zeros([0, feature_depth], dtype=tf.float32)
-  output_scales = tf.zeros([0], dtype=tf.float32)
-  output_scores = tf.zeros([0], dtype=tf.float32)
+  output_scales   = tf.zeros([0], dtype=tf.float32)
+  output_scores   = tf.zeros([0], dtype=tf.float32)
 
   # Process the first scale separately, the following scales will reuse the
   # graph variables.
@@ -207,7 +208,16 @@ def ExtractKeypointDescriptor(image, layer_name, image_scales, iou,
        output_scales,
        output_scores,
        reuse=False)
-  i = tf.constant(1, dtype=tf.int32)
+  
+  # attention map을 원 이미지 사이즈로 resize
+  # Original size attention 
+  orginal_size_attention, _ = model_fn(
+                image_tensor, normalized_image=True, reuse=True)
+  orginal_size_attention = tf.minimum(orginal_size_attention, 255)
+  orginal_size_attention = tf.image.resize_bilinear(orginal_size_attention, tf.gather(tf.shape(image), [0, 1]))
+  
+  #
+  i          = tf.constant(1, dtype=tf.int32)
   num_scales = tf.shape(image_scales)[0]
   keep_going = lambda j, boxes, features, scales, scores: tf.less(j, num_scales)
 
@@ -233,8 +243,7 @@ def ExtractKeypointDescriptor(image, layer_name, image_scales, iou,
   feature_boxes.add_field('scores', output_scores)
 
   nms_max_boxes = tf.minimum(max_feature_num, feature_boxes.num_boxes())
-  final_boxes = box_list_ops.non_max_suppression(feature_boxes, iou,
-                                                 nms_max_boxes)
+  final_boxes   = box_list_ops.non_max_suppression(feature_boxes, iou, nms_max_boxes)
 
   return (final_boxes.get(), final_boxes.get_field('scales'),
           final_boxes.get_field('features'),
