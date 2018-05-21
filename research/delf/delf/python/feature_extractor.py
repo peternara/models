@@ -175,6 +175,14 @@ def ExtractKeypointDescriptor(image, layer_name, image_scales, iou,
     # 이 부분이 이미지 사이즈로 feature map을 convert(scale)하는 부분인듯
     # Re-project back to the original image space.
     rf_boxes    = tf.divide(rf_boxes, scale)
+    # [-1]은 attention을 일차원으로 만들어라.란 의미 > 
+    #  예)  tensor 't' =  [[[1, 1, 1],
+    #                [2, 2, 2]],
+    #               [[3, 3, 3],
+    #                [4, 4, 4]],
+    #               [[5, 5, 5],
+    #                [6, 6, 6]]]
+    #   reshape(t, [-1]) ==> [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6]
     attention   = tf.reshape(attention, [-1]) # 이해안감? [-1] 이부분이..
     feature_map = tf.reshape(feature_map, [-1, feature_depth])
 
